@@ -1,0 +1,202 @@
+# Kitchen wireless switch (single click)
+# Manual toggle kitchen backlight
+- id: kitchen_backlight_switch
+  alias: "Kitchen backlight switch"
+  trigger:
+    - platform: state
+      entity_id: sensor.0x00158d00018392c4_action
+      to: "single"
+  action:
+    - service: switch.toggle
+      data:
+        entity_id: switch.0x00158d00015c77a8
+
+# Kitchen wireless switch (long-click)
+# Toggle motion-based backlight control automation
+- id: kitchen_backlight_switch_motion_off
+  alias: "Toggle motion-based backlight control automation"
+  trigger:
+    - platform: state
+      entity_id: sensor.0x00158d00018392c4_action
+      to: "hold"
+  action:
+    - service: xiaomi_aqara.play_ringtone
+      data:
+        gw_mac: !secret xiaomi_gateway_mac
+        ringtone_id: 11
+        ringtone_vol: 10
+    - service: automation.toggle
+      data:
+        entity_id: automation.kitchen_backlight_motion_sensor_off
+
+# Kitchen backlight motion sensor
+- id: kitchen_backlight_motion_sensor
+  alias: "Kitchen backlight motion sensor"
+  trigger:
+    - platform: state
+      entity_id: binary_sensor.0x00158d00049bab05_occupancy
+      from: "off"
+      to: "on"
+  condition:
+    - condition: state
+      entity_id: sun.sun
+      state: "below_horizon"
+    - condition: state
+      entity_id: binary_sensor.0x00158d00049bab05_occupancy
+      state: "on"
+    - condition: state
+      entity_id: switch.0x00158d00015c77a8
+      state: "off"
+  action:
+    - service: switch.toggle
+      data:
+        entity_id: switch.0x00158d00015c77a8
+
+# Kitchen backlight motion sensor
+- id: kitchen_backlight_motion_sensor_off
+  alias: "Kitchen backlight motion sensor off"
+  trigger:
+    - platform: state
+      entity_id: binary_sensor.0x00158d00049bab05_occupancy
+      from: "on"
+      to: "off"
+      for: "00:02:10"
+  condition:
+    - condition: state
+      entity_id: sun.sun
+      state: "below_horizon"
+    - condition: state
+      entity_id: binary_sensor.0x00158d00049bab05_occupancy
+      state: "off"
+    - condition: state
+      entity_id: switch.0x00158d00015c77a8
+      state: "on"
+  action:
+    - service: switch.toggle
+      data:
+        entity_id: switch.0x00158d00015c77a8
+
+# Night light turn on
+- id: night_light_turn_on
+  alias: "Night light turn on"
+  trigger:
+    - platform: state
+      entity_id: binary_sensor.0x00158d00015a9c49_occupancy
+      from: "off"
+      to: "on"
+  condition:
+    - condition: state
+      entity_id: sun.sun
+      state: "below_horizon"
+    - condition: state
+      entity_id: binary_sensor.0x00158d00015a9c49_occupancy
+      state: "on"
+  action:
+    - service: light.turn_on
+      entity_id: light.mi_control_hub_light
+      data:
+        brightness_pct: 30
+        transition: 180
+        color_name: "orange"
+
+# Night light turn off
+- id: night_light_turn_off
+  alias: "Night light turn off"
+  trigger:
+    - platform: state
+      entity_id: binary_sensor.0x00158d00015a9c49_occupancy
+      from: "on"
+      to: "off"
+  condition:
+    - condition: state
+      entity_id: sun.sun
+      state: "below_horizon"
+    - condition: state
+      entity_id: binary_sensor.0x00158d00015a9c49_occupancy
+      state: "off"
+  action:
+    - service: light.turn_off
+      entity_id: light.mi_control_hub_light
+
+# Bedroom humidifier
+- id: bedroom_humidify_on
+  alias: "Bedroom humidify on"
+  trigger:
+    - platform: numeric_state
+      entity_id: sensor.humidity_158d00019cf3f2
+      # TODO: Automate switch summer / winter values
+      # winter value
+      # below: 30
+      # summer value
+      below: 35
+  action:
+    - service: fan.turn_on
+      entity_id: fan.mijia_smart_sterilization_humidifier_s
+
+- id: bedroom_humidify_off
+  alias: "Bedroom humidify off"
+  trigger:
+    - platform: numeric_state
+      entity_id: sensor.humidity_158d00019cf3f2
+      # TODO: Automate switch summer / winter values
+      # winter value
+      # above: 40
+      # summer value
+      above: 45
+  action:
+    - service: fan.turn_off
+      entity_id: fan.mijia_smart_sterilization_humidifier_s
+
+- id: bedroom_humidify_no_water
+  alias: "Bedroom humidify no water"
+  trigger:
+    - platform: state
+      entity_id: fan.mijia_smart_sterilization_humidifier_s
+      attribute: no_water
+      from: false
+      to: true
+  action:
+    - service: notify.notify
+      data:
+        message: !secret humidifier_no_water
+    - service: notify.telegram_bot_user1
+      data:
+        message: !secret humidifier_no_water
+    - service: notify.telegram_bot_user2
+      data:
+        message: !secret humidifier_no_water
+
+# Disable bathroom fan by timeout
+- id: "bathroom_fan_timeout"
+  alias: Bathroom Fan Timeout
+  trigger:
+    platform: state
+    entity_id:
+      - switch.bathroom_fan
+    from: "off"
+    to: "on"
+    for:
+      hours: 0
+      minutes: 20
+  action:
+    service: switch.turn_off
+    data_template:
+      entity_id: "{{ trigger.entity_id }}"
+
+# Bathroom backlight
+- id: bathroom_backlight
+  alias: "Bathroom backlight"
+  trigger:
+    - platform: state
+      entity_id: binary_sensor.0x00158d0003ce0b4d_occupancy
+      to: "on"
+  action:
+    - service: switch.toggle
+      data:
+        entity_id: switch.sonoff_1000fbbe46
+    - delay:
+        minutes: 2
+    - service: switch.toggle
+      data:
+        entity_id: switch.sonoff_1000fbbe46
+  mode: restart

@@ -1,0 +1,48 @@
+# Configure a default setup of Home Assistant (frontend, api, etc)
+default_config:
+
+# Text to speech
+tts:
+  - platform: google_translate
+
+fan:
+  - platform: xiaomi_miio_airpurifier
+    name: Mijia Smart Sterilization Humidifier S
+    host: !secret bedroom_humidifier_host
+    token: !secret bedroom_humidifier_token
+    model: deerma.humidifier.mjjsq
+
+wake_on_lan:
+
+sonoff:
+  username: !secret sonoff_username
+  password: !secret sonoff_password
+
+# webostv:
+#   host: !secret bedroom_tv_host
+#   name: Bedroom TV
+#   turn_on_action:
+#     service: wake_on_lan.send_magic_packet
+#     data:
+#       mac: !secret bedroom_tv_mac
+#   customize:
+#     sources:
+#       - AppleTV
+
+telegram_bot:
+  - platform: polling
+    api_key: !secret telegram_bot_token
+    allowed_chat_ids: !secret telegram_bot_allowed_chat_ids
+
+notify:
+  - platform: telegram
+    name: telegram_bot_user1
+    chat_id: !secret user1_telegram_chat_id
+  - platform: telegram
+    name: telegram_bot_user2
+    chat_id: !secret user2_telegram_chat_id
+
+group: !include groups.yaml
+automation: !include automations.yaml
+script: !include scripts.yaml
+scene: !include scenes.yaml

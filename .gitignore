@@ -1,0 +1,11 @@
+/.storage
+/blueprints
+/custom_components
+/tts
+/www
+/zigbee2mqtt
+.sonoff.json
+secrets.yaml
+home-assistant.log*
+*.db*
+webostv.conf
